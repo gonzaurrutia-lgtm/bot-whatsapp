@@ -6,15 +6,9 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// 🔴 PEGÁ ACÁ TU URL DE APPS SCRIPT
-const APPS_SCRIPT_URL = "PEGAR_URL_WEBAPP_ACA";
+const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL;
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 
-// 🔴 TOKEN PARA VALIDACIÓN META
-const VERIFY_TOKEN = "mi_token_secreto_123";
-
-// =======================================
-// VERIFICACIÓN WEBHOOK (Meta)
-// =======================================
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -28,9 +22,6 @@ app.get("/webhook", (req, res) => {
   return res.sendStatus(403);
 });
 
-// =======================================
-// RECEPCIÓN MENSAJES WHATSAPP
-// =======================================
 app.post("/webhook", async (req, res) => {
   try {
     const entry = req.body.entry?.[0];
@@ -38,14 +29,15 @@ app.post("/webhook", async (req, res) => {
     const value = changes?.value;
     const message = value?.messages?.[0];
 
-    if (!message) return res.sendStatus(200);
+    if (!message) {
+      return res.sendStatus(200);
+    }
 
     const from = message.from;
-    const text = message.text?.body;
+    const text = message.text?.body || "";
 
     console.log("Mensaje recibido:", from, text);
 
-    // 🔁 LLAMADA A APPS SCRIPT
     const response = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
       headers: {
@@ -61,24 +53,20 @@ app.post("/webhook", async (req, res) => {
 
     console.log("Respuesta Apps Script:", data);
 
-    // 👉 RESPONDER A WHATSAPP
-    await enviarMensajeWhatsApp(from, data.mensaje);
+    await enviarMensajeWhatsApp(from, data.mensaje || "No pude procesar el mensaje.");
 
-    res.sendStatus(200);
+    return res.sendStatus(200);
 
   } catch (error) {
-    console.error("Error:", error);
-    res.sendStatus(500);
+    console.error("Error en webhook:", error);
+    return res.sendStatus(500);
   }
 });
 
-// =======================================
-// ENVÍO DE MENSAJES
-// =======================================
 async function enviarMensajeWhatsApp(to, mensaje) {
   const url = `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`;
 
-  await fetch(url, {
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
@@ -90,6 +78,9 @@ async function enviarMensajeWhatsApp(to, mensaje) {
       text: { body: mensaje }
     })
   });
+
+  const data = await response.text();
+  console.log("Respuesta Meta envío:", data);
 }
 
 app.listen(PORT, () => {
