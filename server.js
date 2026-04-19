@@ -33,10 +33,15 @@ app.post("/webhook", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    const from = message.from;
+    const from = message.from || "";
     const text = message.text?.body || "";
+    const messageId = message.id || "";
 
-    console.log("Mensaje recibido:", from, text);
+    console.log("Mensaje recibido:", {
+      from,
+      text,
+      messageId
+    });
 
     const response = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
@@ -45,7 +50,8 @@ app.post("/webhook", async (req, res) => {
       },
       body: JSON.stringify({
         whatsapp: "+" + from,
-        texto: text
+        texto: text,
+        message_id: messageId
       })
     });
 
@@ -53,7 +59,10 @@ app.post("/webhook", async (req, res) => {
 
     console.log("Respuesta Apps Script:", data);
 
-    await enviarMensajeWhatsApp(from, data.mensaje || "No pude procesar el mensaje.");
+    // Solo responde al usuario si hay mensaje
+    if (data && data.mensaje) {
+      await enviarMensajeWhatsApp(from, data.mensaje);
+    }
 
     return res.sendStatus(200);
 
