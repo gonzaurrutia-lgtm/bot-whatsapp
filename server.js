@@ -95,3 +95,7 @@ async function enviarMensajeWhatsApp(to, mensaje) {
 app.listen(PORT, () => {
   console.log("Servidor corriendo en puerto", PORT);
 });
+
+media_url: req.body.MediaUrl0 || "",
+media_type: req.body.MediaContentType0 || "",
+media_count: req.body.NumMedia || 0
