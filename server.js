@@ -123,7 +123,19 @@ async function extraerMediaWhatsApp(message) {
     }
   });
 
-  const data = await response.json();
+  const rawResponse = await response.text();
+
+let data;
+try {
+  data = JSON.parse(rawResponse);
+} catch (e) {
+  console.error("Apps Script no devolvió JSON:", rawResponse.slice(0, 500));
+
+  data = {
+    ok: false,
+    mensaje: "Error: Apps Script no devolvió una respuesta válida. Revisar ejecuciones."
+  };
+}
 
   if (!response.ok) {
     console.error("Error obteniendo media de Meta:", data);
