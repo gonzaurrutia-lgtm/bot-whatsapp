@@ -36,7 +36,11 @@ app.post("/webhook", async (req, res) => {
     }
 
     const from = message.from || "";
-    const text = message.text?.body || "";
+    const text =
+    message.text?.body ||
+    message.document?.caption ||
+    message.image?.caption ||
+    "";
     const messageId = message.id || "";
 
     const mediaInfo = await extraerMediaWhatsApp(message);
